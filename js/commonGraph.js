@@ -194,6 +194,43 @@ function intiGraphCy(returnData) {
         cy.center();
         layout.run();
     });
+    
+    //Qtip
+    cy.elements('node').qtip({
+		content: function(){
+                    //if(node.data[questionno''] == "RQ")
+                      //  return 'Example qTip on ele ' + this.id(); 
+                    /*if (this.nodeLabel === "ResearchQuestion")
+                        return 'Example qTip on ele ' + this.properties.sentence;
+                    else*/
+                        return 'Example qTip on ele ' + this.id(); 
+                    
+                    //return $(this).id;
+                    //return 'Example qTip on ele ' + this.data['label'];
+                },
+		position: {
+			my: 'top center',
+			at: 'bottom center'
+		},
+		show: { event: 'mouseover' },
+                hide: { event: 'mouseout' },
+		style: {
+                        //def: false,
+                        //classes: 'qtip-rounded qtip-shadow qtip-blue',
+                        classes: 'qtip-rounded qtip-shadow qtip-blue',
+                        //classes: 'qtip-bootstrap',
+                        //classes: 'qtip-youtube',
+                        //classes: 'qtip-tipsy',
+                        //classes: 'qtip-tipped',
+                        //classes: 'qtip-jtools',
+                        //classes: 'qtip-cluetip',
+                            
+			tip: {
+                                width: 16,
+				height: 8
+			}
+		}
+	});
 }
 
 function getNodeColor(nodeType, node) {
