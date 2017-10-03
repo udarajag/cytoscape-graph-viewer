@@ -119,7 +119,7 @@ function intiGraphCy(returnData) {
         },
 
     });
-    
+
 //    var selectAllOfTheSameType = function (ele) {
 //        cy.elements().unselect();
 //        if (ele.isNode()) {
@@ -191,7 +191,7 @@ function intiGraphCy(returnData) {
             if (nodeType === "DR") {
                 var uri = this.data('fullName');
                 window.open(uri);
-            } 
+            }
         } catch (e) {
             window.location.href = this.data('fullName');
         }
@@ -213,43 +213,32 @@ function intiGraphCy(returnData) {
         cy.center();
         layout.run();
     });
-    
+
     //Qtip
     cy.elements('node').qtip({
-		content: function(){
-                    //if(node.data[questionno''] == "RQ")
-                      //  return 'Example qTip on ele ' + this.id(); 
-                    /*if (this.nodeLabel === "ResearchQuestion")
-                        return 'Example qTip on ele ' + this.properties.sentence;
-                    else*/
-                        return 'Example qTip on ele ' + this.id(); 
-                    
-                    //return $(this).id;
-                    //return 'Example qTip on ele ' + this.data['label'];
-                },
-		position: {
-			my: 'top center',
-			at: 'bottom center'
-		},
-		show: { event: 'mouseover' },
-                hide: { event: 'mouseout' },
-		style: {
-                        //def: false,
-                        //classes: 'qtip-rounded qtip-shadow qtip-blue',
-                        classes: 'qtip-rounded qtip-shadow qtip-blue',
-                        //classes: 'qtip-bootstrap',
-                        //classes: 'qtip-youtube',
-                        //classes: 'qtip-tipsy',
-                        //classes: 'qtip-tipped',
-                        //classes: 'qtip-jtools',
-                        //classes: 'qtip-cluetip',
-                            
-			tip: {
-                                width: 16,
-				height: 8
-			}
-		}
-	});
+        content: function () {
+            var question = this.data('question');
+            if(question != undefined){
+               return question; 
+            }else{
+                return this.data('name')
+            }
+            
+        },
+        position: {
+            my: 'top center',
+            at: 'bottom center'
+        },
+        show: {event: 'mouseover'},
+        hide: {event: 'mouseout'},
+        style: {
+            classes: 'qtip-rounded qtip-shadow qtip-blue',
+            tip: {
+                width: 16,
+                height: 8
+            }
+        }
+    });
 }
 
 function getNodeColor(nodeType) {
@@ -322,7 +311,7 @@ function getNodeType(node) {
 function getNodeNameCy(nodeType, node) {
     if (nodeType == "DR") {
         var res = node.properties.uri.split("/");
-        var label = res[res.length-1].replace(".v1","")
+        var label = res[res.length - 1].replace(".v1", "")
         return label;
     } else if (nodeType == "DCI") {
         return node.properties.label;
@@ -357,7 +346,7 @@ function getNodeByType(nodeObj) {
             , fullName: nodeObj.properties.name
             , nodeColor: getNodeColor(nodeType)
             , nodeType: nodeType
-            
+
                     //,label : getNodeLabel(nodeObj)
         }};
     if (nodeType == 'CI') {
