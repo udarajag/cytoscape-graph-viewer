@@ -96,10 +96,10 @@ function intiGraphCy(returnData) {
                 }
             },
             {
-                selector: ':faded',
+                selector: '.faded',
                 style: {
                     'opacity': 0.25,
-                    'text-opacity': 0
+                    'text-opacity': 0.75
                 }
             },
             {
@@ -183,7 +183,8 @@ function intiGraphCy(returnData) {
     cy.on('tap', 'node', function (e) {
         var node = e.target;
         var neighborhood = node.neighborhood().add(node);
-        cy.elements().addClass('faded');
+        var others = cy.elements().not(neighborhood);
+        others.addClass('faded');
         neighborhood.removeClass('faded');
         cy.layout();
         var nodeType = this.data('nodeType');
