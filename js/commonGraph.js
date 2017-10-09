@@ -153,18 +153,6 @@ function intiGraphCy(returnData) {
             }
         ]
     });
-//    cy.on('select unselect', 'node', function (e) {
-//        if (e !== null) {
-//            var json = JSON.stringify(e.target._private.data);
-//            $("#selNodeDes").html(getNodeDesc(json));
-//            Promise.resolve().then(function () {
-//            });
-//        } else {
-//            //$("selData").val('');
-//            $("#selNodeDes").html('');
-//        }
-//
-//    });
 
 //    cy.on('tap', 'node', function () {
 //        var nodeType = this.data('nodeType');
@@ -186,13 +174,16 @@ function intiGraphCy(returnData) {
         var others = cy.elements().not(neighborhood);
         others.addClass('faded');
         neighborhood.removeClass('faded');
+        //neighborhood.center();
         cy.layout();
         var nodeType = this.data('nodeType');
         try {
-            if (nodeType === "DR") {
-                var uri = this.data('fullName');
+            var uri = "";
+            if (nodeType === "DR" | nodeType === "PB") {
+                uri = this.data('fullName');
                 window.open(uri);
             }
+            
         } catch (e) {
             window.location.href = this.data('fullName');
         }
@@ -210,7 +201,6 @@ function intiGraphCy(returnData) {
             animationDuration: 2000,
             randomize: true
         });
-        //cy.fit();
         cy.center();
         layout.run();
     });
@@ -222,7 +212,7 @@ function intiGraphCy(returnData) {
             if(question != undefined){
                return question; 
             }else{
-                return this.data('name')
+                return this.data('name');
             }
             
         },
@@ -240,6 +230,18 @@ function intiGraphCy(returnData) {
             }
         }
     });
+}
+
+var fadeNeighborhood = function(node,depth){
+    var neighborhood = node.neighborhood();
+    neighborhood.removeClass('faded');
+    depth = depth -1;
+    if(depth > 0){
+      neighborhood.forEach(function(element){
+          fadeNeighborhood(element,depth-1)
+      });  
+    }
+    neighborhood.add(node).removeClass('faded');
 }
 
 function getNodeColor(nodeType) {
@@ -321,12 +323,13 @@ function getNodeNameCy(nodeType, node) {
     } else if (nodeType == "DC") {
         return node.properties.name;
     } else if (nodeType == "PB") {
-        return node.properties.doi;
+        var res = node.properties.doi.split("/");
+        return res[res.length - 1];
     } else if (nodeType == "RQ") {
         return node.properties.questionNo;
     } else if (nodeType == "CI") {
         return node.properties.name;
-    } else if (nodeType == "CRC") {
+    } else if (nodeType == "CRC") { // non-dem_V2.E#CRC
         return node.properties.relation;
     } else if (nodeType == "OC") {
         return node.properties.name;
@@ -366,6 +369,7 @@ function getNodeByType(nodeObj) {
 //node.data['id'] = nodeObj.properties.id;
         node.data['questionNo'] = nodeObj.properties.questionNo;
         node.data['sentence'] = nodeObj.properties.sentence;
+        node.data['question'] = nodeObj.properties.sentence;
     } else if (nodeType == 'CI') {
         node.data['uri'] = nodeObj.properties.uri;
         node.data['name'] = nodeObj.properties.name;
@@ -387,6 +391,9 @@ function getNodeByType(nodeObj) {
 //node.data['id'] = nodeObj.properties.id;
         node.data['label'] = nodeObj.properties.label;
         node.data['value'] = nodeObj.properties.value;
+    }else if (nodeType === "DCI") {
+        node.data['question'] = nodeObj.properties.question;
+        node.data['dataType'] = nodeObj.properties.dataType;
     }
     return node;
 }
