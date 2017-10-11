@@ -221,9 +221,9 @@ function intiGraphCy(returnData) {
 
     //Qtip
     cy.elements('node').qtip({
-        content: function (api) {
+        content: function (event,api) {
             var content = getToolTipContent(this);
-            return content  === null ? api.destroy() : content;
+            return content  === null ? api.tooltip.hide() : content;
             
         },
         position: {
