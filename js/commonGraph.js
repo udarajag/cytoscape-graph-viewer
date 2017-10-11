@@ -194,12 +194,12 @@ function intiGraphCy(returnData) {
         try {
             var uri = "";
             if (nodeType === "DR" | nodeType === "PB") {
-                uri = this.data('fullName');
+                uri = this.data('uri');
                 window.open(uri);
             }
             
         } catch (e) {
-            window.location.href = this.data('fullName');
+            window.location.href = this.data('uri');
         }
     });
     cy.on('tap', function (e) {
@@ -221,9 +221,9 @@ function intiGraphCy(returnData) {
 
     //Qtip
     cy.elements('node').qtip({
-        content: function (api) {
+        content: function (event,api) {
             var content = getToolTipContent(this);
-            return content  === null ? api.destroy() : content;
+            return content  === null ? api.tooltip.hide() : content;
             
         },
         position: {
@@ -379,7 +379,10 @@ function getNodeByType(nodeObj) {
 
                     //,label : getNodeLabel(nodeObj)
         }};
-    if (nodeType === 'DCI') {
+    if (nodeType === 'DR') {
+         node.data['uri'] = nodeObj.properties.uri;
+    }
+    else if (nodeType === 'DCI') {
 //node.data.push({'question':nodeObj.question});
         node.data['question'] = nodeObj.properties.question;
         node.data['statisticalDataType'] = nodeObj.properties.statisticalDataType;
@@ -391,7 +394,9 @@ function getNodeByType(nodeObj) {
         node.data['uri'] = nodeObj.properties.uri;
         node.data['label'] = nodeObj.properties.label;
         node.data['value'] = nodeObj.properties.value;
-    } else if (nodeType === 'RQ') {
+    } else if (nodeType === 'PB') {
+         node.data['uri'] = nodeObj.properties.uri;
+    }else if (nodeType === 'RQ') {
 //node.data['id'] = nodeObj.properties.id;
         node.data['questionNo'] = nodeObj.properties.questionNo;
         node.data['sentence'] = nodeObj.properties.sentence;
