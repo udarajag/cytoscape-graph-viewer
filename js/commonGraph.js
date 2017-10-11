@@ -1,5 +1,4 @@
 var glayout = 'cose-bilkent';
-
 $(document).ready(function () {
     initialize();
     //To set different layouts
@@ -8,7 +7,6 @@ $(document).ready(function () {
         initialize();
     });
 });
-
 function searchByQuery(query) {
     var data = {
         "statements": [{
@@ -27,7 +25,6 @@ function intiGraphCy(returnData) {
         $.each(value.graph.nodes, function (index1, nodeObj) {
             //var nodeType = getNodeType(nodeObj.labels);
             elements.push(getNodeByType(nodeObj));
-
         })
 
         $.each(value.graph.relationships, function (index2, relationObj) {
@@ -64,8 +61,8 @@ function intiGraphCy(returnData) {
                     'text-valign': 'center',
                     'text-halign': 'center',
                     'content': 'data(name)',
-                    'color': 'white',
-                    'text-outline-width': 2,
+                    'color': 'black',
+                    'text-outline-width': 0,
                     'background-opacity': 0.9,
                 }
             },
@@ -97,6 +94,19 @@ function intiGraphCy(returnData) {
                     'font-size': '1.3em',
                     'font-weight': 'bold'
                 }
+            },
+            {
+                selector: '.faded',
+                style: {
+                    'opacity': 0.25,
+                    'text-opacity': 0.75
+                }
+            },
+            {
+                selector: ':common',
+                style: {
+                    'background-color': 'RED'
+                }
             }
         ],
         layout: {
@@ -110,18 +120,16 @@ function intiGraphCy(returnData) {
 
     });
 
-    var selectAllOfTheSameType = function (ele) {
-        cy.elements().unselect();
-        if (ele.isNode()) {
-            cy.nodes().select();
-        } else if (ele.isEdge()) {
-            cy.edges().select();
-
-        }
-    };
+//    var selectAllOfTheSameType = function (ele) {
+//        cy.elements().unselect();
+//        if (ele.isNode()) {
+//            cy.nodes().select();
+//        } else if (ele.isEdge()) {
+//            cy.edges().select();
+//        }
+//    };
     cy.cxtmenu({
-        selector: 'node, edge',
-
+        selector: 'node',
         commands: [
             {
                 content: 'Data',
@@ -129,14 +137,12 @@ function intiGraphCy(returnData) {
                     console.log(ele.id());
                 }
             },
-
             {
                 content: 'Meta Data',
                 select: function (ele) {
                     console.log(ele.data('name'));
                 }
             },
-
             //Check
 
             {
@@ -146,21 +152,6 @@ function intiGraphCy(returnData) {
                 }
             }
         ]
-    });
-
-
-
-    cy.on('select unselect', 'node', function (e) {
-        if (e !== null) {
-            var json = JSON.stringify(e.target._private.data);
-            $("#selNodeDes").html(getNodeDesc(json));
-            Promise.resolve().then(function () {
-            });
-        } else {
-            //$("selData").val('');
-            $("#selNodeDes").html('');
-        }
-
     });
 
 //    cy.on('tap', 'node', function () {
@@ -176,12 +167,32 @@ function intiGraphCy(returnData) {
 //            window.location.href = this.data('name');
 //        }
 //    });
-    cy.on('tap', 'node', function() {
-        var sel = this;
-        cy.elements().difference(sel.outgoers()).not(sel).addClass('semitransp');
-        sel.addClass('highlight').outgoers().addClass('highlight');
-    });
 
+    cy.on('tap', 'node', function (e) {
+        var node = e.target;
+        var neighborhood = node.neighborhood().add(node);
+        var others = cy.elements().not(neighborhood);
+        others.addClass('faded');
+        neighborhood.removeClass('faded');
+        //neighborhood.center();
+        cy.layout();
+        var nodeType = this.data('nodeType');
+        try {
+            var uri = "";
+            if (nodeType === "DR" | nodeType === "PB") {
+                uri = this.data('fullName');
+                window.open(uri);
+            }
+            
+        } catch (e) {
+            window.location.href = this.data('fullName');
+        }
+    });
+    cy.on('tap', function (e) {
+        if (e.cyTarget === cy) {
+            cy.elements().removeClass('faded');
+        }
+    });
     document.getElementById("layoutButton").addEventListener("click", function () {
         var layout = cy.layout({
             name: 'cose-bilkent',
@@ -190,13 +201,50 @@ function intiGraphCy(returnData) {
             animationDuration: 2000,
             randomize: true
         });
-        //cy.fit();
         cy.center();
         layout.run();
     });
+
+    //Qtip
+    cy.elements('node').qtip({
+        content: function () {
+            var question = this.data('question');
+            if(question != undefined){
+               return question; 
+            }else{
+                return this.data('name');
+            }
+            
+        },
+        position: {
+            my: 'top center',
+            at: 'bottom center'
+        },
+        show: {event: 'mouseover'},
+        hide: {event: 'mouseout'},
+        style: {
+            classes: 'qtip-rounded qtip-shadow qtip-blue',
+            tip: {
+                width: 16,
+                height: 8
+            }
+        }
+    });
 }
 
-function getNodeColor(nodeType, node) {
+var fadeNeighborhood = function(node,depth){
+    var neighborhood = node.neighborhood();
+    neighborhood.removeClass('faded');
+    depth = depth -1;
+    if(depth > 0){
+      neighborhood.forEach(function(element){
+          fadeNeighborhood(element,depth-1)
+      });  
+    }
+    neighborhood.add(node).removeClass('faded');
+}
+
+function getNodeColor(nodeType) {
     if (nodeType === "DR") {
         return "#f7b738";
     } else if (nodeType === "DCI") {
@@ -225,7 +273,7 @@ function getNodeColor(nodeType, node) {
 }
 
 function getEdgeColor(edge) {
-    //alert(edge);
+//alert(edge);
     var relType = edge.type;
     if (relType == "ofDemConcInst") {
         return "#7c1655"
@@ -265,7 +313,9 @@ function getNodeType(node) {
 
 function getNodeNameCy(nodeType, node) {
     if (nodeType == "DR") {
-        return node.properties.uri;
+        var res = node.properties.uri.split("/");
+        var label = res[res.length - 1].replace(".v1", "")
+        return label;
     } else if (nodeType == "DCI") {
         return node.properties.label;
     } else if (nodeType == "DV") {
@@ -273,12 +323,13 @@ function getNodeNameCy(nodeType, node) {
     } else if (nodeType == "DC") {
         return node.properties.name;
     } else if (nodeType == "PB") {
-        return node.properties.doi;
+        var res = node.properties.doi.split("/");
+        return res[res.length - 1];
     } else if (nodeType == "RQ") {
         return node.properties.questionNo;
     } else if (nodeType == "CI") {
         return node.properties.name;
-    } else if (nodeType == "CRC") {
+    } else if (nodeType == "CRC") { // non-dem_V2.E#CRC
         return node.properties.relation;
     } else if (nodeType == "OC") {
         return node.properties.name;
@@ -294,22 +345,16 @@ function getNodeNameCy(nodeType, node) {
 function getNodeByType(nodeObj) {
     var nodeType = getNodeType(nodeObj);
     var nodeName = getNodeNameCy(nodeType, nodeObj);
-//	if(nodeName.length > 8){
-//		nodeName = nodeName.substring(0, 8) + '...';
-//	}
-
-    //var nodeObj = value.graph.nodes[0];
-    //var nodeType = getNodeType(nodeObj);
     var node = {data: {id: nodeObj.id
             , name: nodeName
             , fullName: nodeObj.properties.name
-            , nodeColor: getNodeColor(nodeType, nodeObj)
+            , nodeColor: getNodeColor(nodeType)
             , nodeType: nodeType
+
                     //,label : getNodeLabel(nodeObj)
         }};
-
     if (nodeType == 'CI') {
-        //node.data.push({'question':nodeObj.question});
+//node.data.push({'question':nodeObj.question});
         node.data['question'] = nodeObj.properties.question;
         node.data['dataType'] = nodeObj.properties.dataType;
         node.data['uri'] = nodeObj.properties.uri;
@@ -321,14 +366,15 @@ function getNodeByType(nodeObj) {
         node.data['label'] = nodeObj.properties.label;
         node.data['value'] = nodeObj.properties.value;
     } else if (nodeType == 'RQ') {
-        //node.data['id'] = nodeObj.properties.id;
+//node.data['id'] = nodeObj.properties.id;
         node.data['questionNo'] = nodeObj.properties.questionNo;
         node.data['sentence'] = nodeObj.properties.sentence;
+        node.data['question'] = nodeObj.properties.sentence;
     } else if (nodeType == 'CI') {
         node.data['uri'] = nodeObj.properties.uri;
         node.data['name'] = nodeObj.properties.name;
     } else if (nodeType == 'CRC') {
-        //node.data['id'] = nodeObj.properties.id;
+//node.data['id'] = nodeObj.properties.id;
         node.data['crcNo'] = nodeObj.properties.crcNo;
         node.data['relation'] = nodeObj.properties.relation;
     } else if (nodeType == 'OC') {
@@ -336,15 +382,18 @@ function getNodeByType(nodeObj) {
         node.data['prefix'] = nodeObj.properties.prefix;
         node.data['name'] = nodeObj.properties.name;
     } else if (nodeType == 'VAR') {
-        // node.data['id'] = nodeObj.properties.id;
+// node.data['id'] = nodeObj.properties.id;
         node.data['label'] = nodeObj.properties.label;
         node.data['varName'] = nodeObj.properties.varName;
         node.data['question'] = nodeObj.properties.question;
         node.data['dataType'] = nodeObj.properties.dataType;
     } else if (nodeType == 'VAL') {
-        //node.data['id'] = nodeObj.properties.id;
+//node.data['id'] = nodeObj.properties.id;
         node.data['label'] = nodeObj.properties.label;
         node.data['value'] = nodeObj.properties.value;
+    }else if (nodeType === "DCI") {
+        node.data['question'] = nodeObj.properties.question;
+        node.data['dataType'] = nodeObj.properties.dataType;
     }
     return node;
 }
