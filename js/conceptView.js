@@ -1,5 +1,5 @@
 function initialize() {
-    searchByQuery("match (n1)-[r1:relatedPublication|researchQuestion|CRC]->(n2) return n1,r1,n2 limit 2500");
+    searchByQuery("match (n1)-[r1:relatedPublication|researchQuestion|CRC|ofInstance|ofConcept|hasVariable]->(n2) return n1,r1,n2 limit 2500");
 }
 //|ofInstance|ofConcept|hasVariable
 //"match (n1:DataRecord)-[r1:relatedPublication]->(n2:Publication) " +
