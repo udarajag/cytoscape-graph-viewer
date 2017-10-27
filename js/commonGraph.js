@@ -17,22 +17,27 @@ function searchByQuery(query) {
     sendAjax("POST", "http://localhost:7474/db/data/transaction/commit", data, intiGraphCy, null);
 }
 
-var demConceptCount={};
+var demConceptCount = {};
+var lastSelectedNodes = [];
 function intiGraphCy(returnData) {
-    demConceptCount={};
+    $('#cy').hide();
+    demConceptCount = {};
     var elements = [];
     var elementObjs = returnData.results[0].data;
+
+    var parents = {};
+
     $.each(elementObjs, function (index, value) {
         $.each(value.graph.nodes, function (index1, nodeObj) {
-            if(getNodeType(nodeObj) === "DC"){
-                if(demConceptCount[nodeObj.id] === undefined){
+            if (getNodeType(nodeObj) === "DC") {
+                if (demConceptCount[nodeObj.id] === undefined) {
                     demConceptCount[nodeObj.id] = 0;
                 }
             }
         });
 
         $.each(value.graph.relationships, function (index2, relationObj) {
-            if(demConceptCount[relationObj.endNode] >= 0){
+            if (demConceptCount[relationObj.endNode] >= 0) {
                 demConceptCount[relationObj.endNode] = demConceptCount[relationObj.endNode] + 1;
             }
             var relationship = {data: {source: relationObj.startNode
@@ -40,17 +45,16 @@ function intiGraphCy(returnData) {
                     , name: relationObj.type
                     , edgeColor: getEdgeColor(relationObj)}};
             elements.push(relationship);
-        });     
-    });
-    
-    //Iterate nodes again to identify dem concepts connected to more than 1 data record
-    $.each(elementObjs, function (index, value) {       
-        $.each(value.graph.nodes, function (index1, nodeObj) {
-            //var nodeType = getNodeType(nodeObj.labels);
-            elements.push(getNodeByType(nodeObj));           
         });
     });
-   // console.log(elements.length);
+    //Iterate nodes again to identify dem concepts connected to more than 1 data record
+    $.each(elementObjs, function (index, value) {
+        $.each(value.graph.nodes, function (index1, nodeObj) {
+            //var nodeType = getNodeType(nodeObj.labels);
+            elements.push(getNodeByType(nodeObj));
+        });
+    });
+    // console.log(elements.length);
 
     var cy = cytoscape({
 
@@ -76,7 +80,7 @@ function intiGraphCy(returnData) {
                     'content': 'data(name)',
                     'color': 'black',
                     'text-outline-width': 0,
-                    'background-opacity': 0.9,
+                    'background-opacity': 0.9
                 }
             },
 
@@ -167,16 +171,50 @@ function intiGraphCy(returnData) {
             }
         ]
     });
-
+  
     cy.on('tap', 'node', function (e) {
         var node = e.target;
+        $.each(lastSelectedNodes, function (index, lastSelectedNode) {
+        if (!lastSelectedNode.successors().contains(node)) {
+            
+            lastSelectedNode.successors().remove();
+            $(this).remove(lastSelectedNode);
+        }
+    });
+
+        var nodeType = this.data('nodeType');
+        lastSelectedNodes.push(node);
+        var childNodeTypes = [];
+        var edgeTypes = [];
+        if (page === 'dem') {
+            if (nodeType === 'DR') {
+                childNodeTypes = ["DCI"];
+                edgeTypes = ["hasVariable"];
+                restoreChildren(node, childNodeTypes, edgeTypes);
+            } else if (nodeType === "DCI") {
+                childNodeTypes = ["DC"];
+                edgeTypes= ["instanceOf"];
+                restoreChildren(node, childNodeTypes, edgeTypes);
+            }
+        } else if (page === 'conc') {
+            if (nodeType === 'PB') {
+                childNodeTypes = ["RQ"];
+                edgeTypes = ["researchQuestion"];
+                restoreChildren(node, childNodeTypes, edgeTypes);
+            }
+            else if (nodeType === 'RQ') {
+                childNodeTypes = ["CRC","CI"];
+                edgeTypes = ["CRC", "ofInstance"];
+                restoreChildren(node, childNodeTypes, edgeTypes);
+            }
+        }
         var neighborhood = node.neighborhood().add(node);
         var others = cy.elements().not(neighborhood);
+
         others.addClass('faded');
         neighborhood.removeClass('faded');
         //neighborhood.center();
         cy.layout();
-        
     });
     cy.on('tap', function (e) {
         if (e.cyTarget === cy) {
@@ -197,10 +235,10 @@ function intiGraphCy(returnData) {
 
     //Qtip
     cy.elements('node').qtip({
-        content: function (event,api) {
+        content: function (event, api) {
             var content = getToolTipContent(this);
-            return content  === null ? api.tooltip.hide() : content;
-            
+            return content === null ? api.tooltip.hide() : content;
+
         },
         position: {
             my: 'top center',
@@ -216,6 +254,67 @@ function intiGraphCy(returnData) {
             }
         }
     });
+
+    if (page === 'dem') {
+        $.each(cy.elements("node[nodeType='DR']"), function (index, element) {
+            getChildren(element);
+                element.scratch({
+                    restData: element.successors()
+
+                });
+        });
+        $.each(cy.elements("node[nodeType='DR']"), function (index, element) {
+            element.scratch().restData.remove();
+        });
+    }
+    else if (page === 'conc') {
+        $.each(cy.elements("node[nodeType='PB']"), function (index, element) {
+            getChildren(element);
+                element.scratch({
+                    restData: element.successors()
+
+                });
+        });
+        $.each(cy.elements("node[nodeType='PB']"), function (index, element) {
+            element.scratch().restData.remove();
+        });
+    }
+    $('#cy').show();
+}
+
+function getChildren(node) {
+    var children = node.successors().targets();
+    $.each(children, function (index, element) {
+        if (element.data("name") === "EducationLevel") {
+            element.scratch({
+                restData: element.successors()
+            });
+        } else {
+            element.scratch({
+                restData: element.successors()
+            });
+        }
+    });
+
+
+}
+
+function restoreChildren(node, childNodeTypes, edgeTypes) {
+    var nodes = [];
+    var edges = [];
+    $.each(node.scratch().restData, function (index, element) {
+        if ($.inArray(element.data("nodeType"), childNodeTypes) >=0) {
+            nodes.push(element);
+        } else if ($.inArray(element.data("name"), edgeTypes) >= 0) {
+            edges.push(element);
+        }
+    });
+    $.each(nodes, function (index, node) {
+        node.restore();
+    });
+    $.each(edges, function (index, edge) {
+        edge.restore();
+    });
 }
 
 //var fadeNeighborhood = function(node,depth){
@@ -230,6 +329,7 @@ function intiGraphCy(returnData) {
 //    neighborhood.add(node).removeClass('faded');
 //};
 
+
 function getNodeType(node) {
     var nodeLabel = node.labels[0];
     if (nodeLabel === "DataRecord") {
@@ -240,7 +340,7 @@ function getNodeType(node) {
         return "DV";
     } else if (nodeLabel === "DemConcept") {
         return "DC";
-    } else if (nodeLabel ==="Publication") {
+    } else if (nodeLabel === "Publication") {
         return "PB";
     } else if (nodeLabel === "ResearchQuestion") {
         return "RQ";
@@ -366,9 +466,8 @@ function getNodeByType(nodeObj) {
                     //,label : getNodeLabel(nodeObj)
         }};
     if (nodeType === 'DR') {
-         node.data['uri'] = nodeObj.properties.uri;
-    }
-    else if (nodeType === 'DCI') {
+        node.data['uri'] = nodeObj.properties.uri;
+    } else if (nodeType === 'DCI') {
 //node.data.push({'question':nodeObj.question});
         node.data['question'] = nodeObj.properties.question;
         node.data['statisticalDataType'] = nodeObj.properties.statisticalDataType;
@@ -382,8 +481,8 @@ function getNodeByType(nodeObj) {
         node.data['label'] = nodeObj.properties.label;
         node.data['value'] = nodeObj.properties.value;
     } else if (nodeType === 'PB') {
-         node.data['uri'] = nodeObj.properties.uri;
-    }else if (nodeType === 'RQ') {
+        node.data['uri'] = nodeObj.properties.uri;
+    } else if (nodeType === 'RQ') {
 //node.data['id'] = nodeObj.properties.id;
         node.data['questionNo'] = nodeObj.properties.questionNo;
         node.data['sentence'] = nodeObj.properties.sentence;
@@ -409,9 +508,9 @@ function getNodeByType(nodeObj) {
         node.data['label'] = nodeObj.properties.label;
         node.data['value'] = nodeObj.properties.value;
     }/*else if (nodeType === "DCI") {
-        node.data['question'] = nodeObj.properties.question;
-        node.data['dataType'] = nodeObj.properties.dataType;
-    }*/
+     node.data['question'] = nodeObj.properties.question;
+     node.data['dataType'] = nodeObj.properties.dataType;
+     }*/
     return node;
 }
 
