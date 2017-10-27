@@ -1,3 +1,4 @@
+var page = 'conc';
 function initialize() {
     searchByQuery("match (n1)-[r1:relatedPublication|researchQuestion|CRC|ofInstance|ofConcept|hasVariable]->(n2) return n1,r1,n2 limit 2500");
 }
