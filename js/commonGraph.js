@@ -66,10 +66,9 @@ function intiGraphCy(returnData) {
             {
                 selector: 'node',
                 style: {
-
                     'width': '80px',
                     'height': '80px',
-                    //'background-color': '#40E0D0',
+                    'shape': 'data(nodeShape)',
                     'background-color': 'data(nodeColor)',
                     'label': 'data(name)',
                     'border-style': 'solid',
@@ -150,41 +149,29 @@ function intiGraphCy(returnData) {
         selector: 'node',
         commands: [
             {
+                content: 'ICPSR',
+                select: function (ele) {
+                    var nodeType = ele.data('nodeType');
+                    try {
+                        var uri = "";
+                        if (nodeType === "DR" | nodeType === "PB") {
+                            uri = this.data('uri');
+                            window.open(uri);
+                        }
+                    } catch (e) {
+                        window.location.href = this.data('uri');
+                    }
+                }
+            },
+            {
                 content: 'Data',
                 select: function (ele) {
-                    console.log(ele.id());
-                }
-            },
-            {
-                content: 'Meta Data',
-                select: function (ele) {
                     console.log(ele.data('name'));
-                }
-            },
-            //Check
-
-            {
-                content: 'Children',
-                select: function (ele) {
-                    console.log(ele.position());
                 }
             }
         ]
     });
-
-//    cy.on('tap', 'node', function () {
-//        var nodeType = this.data('nodeType');
-//        try {
-//            if (nodeType === "DR") {
-//                window.open(this.data('name'));
-//            } else if (nodeType === "CI") {
-//                var query = "match(n1:DemConceptInstance)-[r:hasValue]->(n2:DemVal) where n1.uri='" + this.data('uri') + "' return r,n1,n2";
-//                searchByQuery(query);
-//            }
-//        } catch (e) {
-//            window.location.href = this.data('name');
-//        }
-
+  
     cy.on('tap', 'node', function (e) {
         var node = e.target;
         $.each(lastSelectedNodes, function (index, lastSelectedNode) {
@@ -228,18 +215,6 @@ function intiGraphCy(returnData) {
         neighborhood.removeClass('faded');
         //neighborhood.center();
         cy.layout();
-
-        try {
-            var uri = "";
-            if (nodeType === "DR" | nodeType === "PB") {
-                uri = this.data('uri');
-                //TODO uncomment
-                //window.open(uri);
-            }
-
-        } catch (e) {
-            window.location.href = this.data('uri');
-        }
     });
     cy.on('tap', function (e) {
         if (e.cyTarget === cy) {
@@ -342,70 +317,18 @@ function restoreChildren(node, childNodeTypes, edgeTypes) {
     });
 }
 
-var fadeNeighborhood = function (node, depth) {
-    var neighborhood = node.neighborhood();
-    neighborhood.removeClass('faded');
-    depth = depth - 1;
-    if (depth > 0) {
-        neighborhood.forEach(function (element) {
-            fadeNeighborhood(element, depth - 1);
-        });
-    }
-    neighborhood.add(node).removeClass('faded');
-};
+//var fadeNeighborhood = function(node,depth){
+//    var neighborhood = node.neighborhood();
+//    neighborhood.removeClass('faded');
+//    depth = depth -1;
+//    if(depth > 0){
+//      neighborhood.forEach(function(element){
+//          fadeNeighborhood(element,depth-1);
+//      });  
+//    }
+//    neighborhood.add(node).removeClass('faded');
+//};
 
-function getNodeColor(nodeType, nodeId) {
-    if (nodeType === "DR") {
-        return "#f7b738";
-    } else if (nodeType === "DCI") {
-        return "#d17fcb";
-    } else if (nodeType === "DV") {
-        return "#86dce8";
-    } else if (nodeType === "DC") {
-        if (demConceptCount[nodeId] > 1) {
-            return "#f44242";
-        }
-        return "#8ced80";
-    } else if (nodeType === "PB") {
-        return "#d17fcb";
-    } else if (nodeType === "RQ") {
-        return "#86dce8";
-    } else if (nodeType === "CI") {
-        return "#d17fcb";
-    } else if (nodeType === "CRC") {
-        return "#ff80df";
-    } else if (nodeType === "OC") {
-        return "#5c00e6";
-    } else if (nodeType === "VAR") {
-        return "#996633";
-    } else if (nodeType === "VAL") {
-        return "#40bf40";
-    } else {
-        return "#40E0D0";
-    }
-}
-
-function getToolTipContent(node) {
-    if (node.data('nodeType') === 'DCI') {
-        return node.data('question');
-    } else if (node.data('nodeType') === 'RQ') {
-        return node.data('sentence');
-    } else if (node.data('nodeType') === 'VAR') {
-        return node.data('question');
-    } else {
-        return null;
-    }
-}
-
-function getEdgeColor(edge) {
-//alert(edge);
-    var relType = edge.type;
-    if (relType == "ofDemConcInst") {
-        return "#7c1655";
-    } else {
-        return "#0f0009";
-    }
-}
 
 function getNodeType(node) {
     var nodeLabel = node.labels[0];
@@ -467,6 +390,67 @@ function getNodeNameCy(nodeType, node) {
     }
 }
 
+function getNodeShape(nodeType) {
+    if (nodeType === "DCI") {
+        return 'triangle';
+    }else{
+        return 'polygon';
+    }
+}
+
+function getNodeColor(nodeType, nodeId) {
+    if (nodeType === "DR") {
+        return "#f7b738";
+    } else if (nodeType === "DCI") {
+        return "#d17fcb";
+    } else if (nodeType === "DV") {
+        return "#86dce8";
+    } else if (nodeType === "DC") {
+        if(demConceptCount[nodeId] > 1){
+            return "#006400";
+        }
+        return "#8ced80";
+    } else if (nodeType === "PB") {
+        return "#d17fcb";
+    } else if (nodeType === "RQ") {
+        return "#86dce8";
+    } else if (nodeType === "CI") {
+        return "#d17fcb";
+    } else if (nodeType === "CRC") {
+        return "#ff80df";
+    } else if (nodeType === "OC") {
+        return "#5c00e6";
+    } else if (nodeType === "VAR") {
+        return "#996633";
+    } else if (nodeType === "VAL") {
+        return "#40bf40";
+    } else {
+        return "#40E0D0";
+    }
+}
+
+function getToolTipContent(node){
+    if(node.data('nodeType') === 'DCI'){
+        return node.data('question');
+    }else if(node.data('nodeType') === 'RQ'){
+        return node.data('sentence');
+    }else if(node.data('nodeType') === 'VAR'){
+        return node.data('question');
+    }else{
+        return null;
+    }
+}
+
+function getEdgeColor(edge) {
+//alert(edge);
+    var relType = edge.type;
+    if (relType == "ofDemConcInst") {
+        return "#7c1655";
+    } else {
+        return "#0f0009";
+    }
+}
+
 function getNodeByType(nodeObj) {
     var nodeType = getNodeType(nodeObj);
     var nodeName = getNodeNameCy(nodeType, nodeObj);
@@ -475,7 +459,9 @@ function getNodeByType(nodeObj) {
             , name: nodeName
             , fullName: nodeObj.properties.name
             , nodeColor: getNodeColor(nodeType, nodeId)
+            , nodeShape: getNodeShape(nodeType)
             , nodeType: nodeType
+            
 
                     //,label : getNodeLabel(nodeObj)
         }};
@@ -487,6 +473,7 @@ function getNodeByType(nodeObj) {
         node.data['statisticalDataType'] = nodeObj.properties.statisticalDataType;
         node.data['uri'] = nodeObj.properties.uri;
         node.data['label'] = nodeObj.properties.label;
+        //node.data['nodeShape'] = 'triangle';
     } else if (nodeType === 'DC') {
         node.data['uri'] = nodeObj.properties.uri;
     } else if (nodeType === 'DV') {
