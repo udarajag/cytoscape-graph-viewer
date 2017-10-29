@@ -126,14 +126,14 @@ function intiGraphCy(returnData) {
                 }
             }
         ],
-        layout: {
+        /*layout: {
 
             name: glayout,
             animate: 'end',
             animationEasing: 'ease-out',
             animationDuration: 2000,
             randomize: true
-        }
+        }*/
 
     });
 
@@ -183,26 +183,30 @@ function intiGraphCy(returnData) {
     });
 
         var nodeType = this.data('nodeType');
-        lastSelectedNodes.push(node);
+        
         var childNodeTypes = [];
         var edgeTypes = [];
         if (page === 'dem') {
             if (nodeType === 'DR') {
+                lastSelectedNodes.push(node);
                 childNodeTypes = ["DCI"];
                 edgeTypes = ["hasVariable"];
                 restoreChildren(node, childNodeTypes, edgeTypes);
             } else if (nodeType === "DCI") {
+                lastSelectedNodes.push(node);
                 childNodeTypes = ["DC"];
                 edgeTypes= ["instanceOf"];
                 restoreChildren(node, childNodeTypes, edgeTypes);
             }
         } else if (page === 'conc') {
             if (nodeType === 'PB') {
+                lastSelectedNodes.push(node);
                 childNodeTypes = ["RQ"];
                 edgeTypes = ["researchQuestion"];
                 restoreChildren(node, childNodeTypes, edgeTypes);
             }
             else if (nodeType === 'RQ') {
+                lastSelectedNodes.push(node);
                 childNodeTypes = ["CRC","CI"];
                 edgeTypes = ["CRC", "ofInstance"];
                 restoreChildren(node, childNodeTypes, edgeTypes);
@@ -213,8 +217,15 @@ function intiGraphCy(returnData) {
 
         others.addClass('faded');
         neighborhood.removeClass('faded');
-        //neighborhood.center();
-        cy.layout();
+         var layout = cy.layout({
+            name: 'cose-bilkent',
+            animate: 'end',
+            animationEasing: 'ease-out',
+            animationDuration: 1000,
+            randomize: false
+        });
+        cy.center();
+        layout.run();
     });
     cy.on('tap', function (e) {
         if (e.cyTarget === cy) {
@@ -279,6 +290,15 @@ function intiGraphCy(returnData) {
             element.scratch().restData.remove();
         });
     }
+     var layout = cy.layout({
+            name: 'cose-bilkent',
+            animate: 'end',
+            animationEasing: 'ease-out',
+            animationDuration: 2000,
+            randomize: true
+        });
+        cy.center();
+        layout.run();
     $('#cy').show();
 }
 
