@@ -1,6 +1,13 @@
 var page = 'conc';
 function initialize() {
-    searchByQuery("match (n1)-[r1:relatedPublication|researchQuestion|CRC|ofInstance|ofConcept|hasVariable]->(n2) return n1,r1,n2 limit 2500");
+  var query = "MATCH (n1)-[r1:relatedPublication|researchQuestion|CRC|ofInstance|ofConcept|hasVariable|hasValue]->(n3) "+
+            "where n3:Publication or n3:ResearchQuestion or n3:ConceptInstance or n3:CRC or n3:Class or n3:Variable or n3:Value "+
+    "return n1,n3,r1";
+    
+    
+    //searchByQuery("match (n1:DataRecord|Publication|ResearchQuestion|ConceptInstance|CRC|Class|Variable|Value)-[r1:relatedPublication|researchQuestion|CRC|ofInstance|ofConcept|hasVariable]->(n2:Publication|ResearchQuestion|ConceptInstance|CRC|Class|Variable|Value) return n1,r1,n2 limit 2500");
+    
+    searchByQuery(query);
 }
 //|ofInstance|ofConcept|hasVariable
 //"match (n1:DataRecord)-[r1:relatedPublication]->(n2:Publication) " +
