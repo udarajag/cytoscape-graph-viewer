@@ -184,12 +184,13 @@ function intiGraphCy(returnData) {
             window.location.href = this.data('uri');
         }
         
-        if (nodeType === 'DCI') {
+        if (nodeType === 'DCI' || nodeType === 'VAR') {
             var html = "";
             $.each(node.scratch().restData, function (index, element) {
-                if(element.data('nodeType') === "DV"){
+                if(element.data('nodeType') === "DV" || element.data('nodeType') === "VAL"){
                     html += "<p>"+element.data('valueLabel')+"</p>";
             }
+            
             });
             $('#modal-title').html(node.data('name'));
             $('#model-body').html(html);
@@ -254,12 +255,12 @@ function intiGraphCy(returnData) {
                     childNodeTypes = ["OC", "VAR"];
                     edgeTypes = ["ofConcept", "hasVariable"];
                     restoreChildren(node, childNodeTypes, edgeTypes);
-                } else if (nodeType === 'VAR') {
+                } /*else if (nodeType === 'VAR') {
                     lastSelectedNodes.push(node);
                     childNodeTypes = ["VAL"];
                     edgeTypes = ["hasValue"];
                     restoreChildren(node, childNodeTypes, edgeTypes);
-                }
+                }*/
             }
             var neighborhood = node.neighborhood().add(node);
             var others = cy.elements().not(neighborhood);
